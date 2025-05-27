@@ -263,19 +263,52 @@ Berikut ini adalah beberapa tahap yang dilakukan sebagai berikut:
     Dengan memisahkan data pelatihan dan pengujian, kita bisa mengetahui apakah model bekerja baik hanya pada data latih atau juga pada data baru yang belum pernah dilihat.
 
 ## Modeling
+
 Pada tahap modeling, dilakukan pembangunan model machine learning untuk menyelesaikan permasalahan klasifikasi apakah seseorang merupakan perokok atau bukan. Dataset dibagi terlebih dahulu menjadi dua bagian menggunakan `train_test_split`, yaitu **training set** (80%) dan **test set** (20%) untuk memastikan model dievaluasi secara objektif terhadap data yang belum pernah dilihat.
 
-Dua algoritma yang digunakan adalah **Logistic Regression (LR)** dan **Support Vector Machine (SVM)**. Keduanya dilatih menggunakan training set, lalu dievaluasi menggunakan metrik umum seperti Accuracy, Precision, Recall, dan F1-Score. Untuk meningkatkan performa, dilakukan **hyperparameter tuning** menggunakan `GridSearchCV` pada masing-masing model.
+### Algoritma yang Digunakan
 
-Untuk **Logistic Regression**, parameter seperti `C` (regularisasi) dan `solver` diuji. Sementara pada **SVM**, kombinasi dari `C`, `kernel`, dan `gamma` dicoba. Hasil tuning menunjukkan adanya peningkatan performa pada kedua model.
+Dua algoritma yang digunakan dalam proyek ini adalah **Logistic Regression (LR)** dan **Support Vector Machine (SVM)**. Berikut penjelasan mengenai cara kerja dari masing-masing algoritma:
+
+#### 1. Logistic Regression
+
+Logistic Regression adalah algoritma klasifikasi linier yang digunakan untuk memprediksi probabilitas suatu data termasuk ke dalam kelas tertentu. Model ini menggunakan **fungsi sigmoid (logistic function)** yang memetakan nilai input menjadi nilai antara 0 dan 1, yang kemudian dapat diinterpretasikan sebagai probabilitas.
+
+Rumus fungsi sigmoid:
+
+$$
+\sigma(z) = \frac{1}{1 + e^{-z}}
+$$
+
+di mana $z = w^T x + b$, yaitu kombinasi linier dari fitur-fitur input.
+
+Logistic Regression menentukan batas keputusan (decision boundary) berdasarkan probabilitas tersebut, dan mengklasifikasikan data ke kelas positif (misalnya, perokok) jika probabilitas melebihi threshold tertentu (biasanya 0.5).
+
+#### 2. Support Vector Machine (SVM)
+
+SVM adalah algoritma klasifikasi yang bekerja dengan mencari **hyperplane** terbaik yang memisahkan dua kelas data dengan margin terbesar. Tujuan dari SVM adalah **memaksimalkan margin**, yaitu jarak antara hyperplane dengan data dari masing-masing kelas terdekat, yang disebut **support vectors**.
+
+Untuk kasus data yang tidak dapat dipisahkan secara linier, SVM menggunakan **fungsi kernel** (seperti RBF atau polynomial) untuk memetakan data ke ruang berdimensi lebih tinggi di mana pemisahan menjadi lebih mudah.
+
+Beberapa istilah penting dalam SVM:
+
+* **Hyperplane**: garis (2D) atau bidang (3D) yang menjadi batas pemisah antar kelas.
+* **Support Vectors**: titik-titik data yang paling dekat dengan hyperplane.
+* **Margin**: jarak antara support vectors ke hyperplane, yang ingin dimaksimalkan.
+
+### Pelatihan Awal Model
+
+Model Logistic Regression dan SVM pertama-tama dilatih menggunakan parameter default untuk mendapatkan baseline performa awal.
 
 ```python
 lr = LogisticRegression().fit(X_train, y_train)
 svm = SVC().fit(X_train, y_train)
 ```
 
+Evaluasi dilakukan menggunakan metrik umum seperti Accuracy, Precision, Recall, dan F1-Score.
+
 ```python
-# Fungsi untuk mengevaluasi dan mengembalikan hasil sebagai kamus
+# Fungsi untuk mengevaluasi model
 def evaluate_model(model, X_test, y_test):
     y_pred = model.predict(X_test)
     cm = confusion_matrix(y_test, y_pred)
@@ -292,86 +325,42 @@ def evaluate_model(model, X_test, y_test):
         'F1-Score': f1_score(y_test, y_pred)
     }
     return results
-
-# Mengevaluasi setiap model dan mengumpulkan hasilnya
-results = {
-    'Logistic Regression (LR)': evaluate_model(lr, X_test, y_test),
-    'Support Vector Machine (SVM)': evaluate_model(svm, X_test, y_test),
-}
-
-# Buat DataFrame untuk meringkas hasil
-summary_df = pd.DataFrame(columns=['Model', 'Accuracy', 'Precision', 'Recall', 'F1-Score'])
-
-# Isi DataFrame dengan hasil
-rows = []
-for model_name, metrics in results.items():
-    rows.append({
-        'Model': model_name,
-        'Accuracy': metrics['Accuracy'],
-        'Precision': metrics['Precision'],
-        'Recall': metrics['Recall'],
-        'F1-Score': metrics['F1-Score']
-    })
-
-# Konversi daftar kamus ke DataFrame
-summary_df = pd.DataFrame(rows)
-
-# Tampilkan DataFrame
-print(summary_df)
 ```
-Berikut adalah hasil hasil dari modelin sebelum dilakukan **hyperparameter tuning**.
 
-| Model                          | Accuracy | Precision | Recall  | F1-Score |
-|-------------------------------|----------|-----------|---------|----------|
-| Logistic Regression (LR)      | 0.714101 | 0.584071  | 0.712230| 0.641815 |
-| Support Vector Machine (SVM)  | 0.720569 | 0.589595  | 0.733813| 0.653846 |
+Berikut hasil evaluasi awal sebelum tuning:
 
-Untuk meningkatkan performa dari 2 model tersebut, maka dilakukan **hyperparameter tuning**. Berikut kode programnya.
+| Model                        | Accuracy | Precision | Recall   | F1-Score |
+| ---------------------------- | -------- | --------- | -------- | -------- |
+| Logistic Regression (LR)     | 0.714101 | 0.584071  | 0.712230 | 0.641815 |
+| Support Vector Machine (SVM) | 0.720569 | 0.589595  | 0.733813 | 0.653846 |
+
+### Hyperparameter Tuning
+
+Untuk meningkatkan performa, dilakukan **hyperparameter tuning** menggunakan `GridSearchCV`:
 
 ```python
-from sklearn.model_selection import GridSearchCV
-
-# Parameter grid untuk Logistic Regression
 param_grid_lr = {
-    'C': [0.01, 0.1, 1, 10],       # Regularisasi
+    'C': [0.01, 0.1, 1, 10],
     'solver': ['liblinear', 'lbfgs']
 }
 
-# Parameter grid untuk SVM
 param_grid_svm = {
     'C': [0.1, 1, 10],
-    'kernel': ['linear', 'rbf'],   # Jenis kernel
-    'gamma': ['scale', 'auto']     # Parameter kernel RBF
+    'kernel': ['linear', 'rbf'],
+    'gamma': ['scale', 'auto']
 }
-
-# Inisialisasi model dasar
-base_lr = LogisticRegression()
-base_svm = SVC()
-
-# Lakukan GridSearchCV untuk Logistic Regression
-grid_search_lr = GridSearchCV(base_lr, param_grid_lr, cv=5, scoring='f1', n_jobs=-1)
-grid_search_lr.fit(X_train, y_train)
-best_lr = grid_search_lr.best_estimator_
-print("Best Logistic Regression Parameters:", grid_search_lr.best_params_)
-
-# Lakukan GridSearchCV untuk SVM
-grid_search_svm = GridSearchCV(base_svm, param_grid_svm, cv=5, scoring='f1', n_jobs=-1)
-grid_search_svm.fit(X_train, y_train)
-best_svm = grid_search_svm.best_estimator_
-print("Best SVM Parameters:", grid_search_svm.best_params_)
-
 ```
 
-Berikut adalah hasil hasil dari modelin setelah dilakukan **hyperparameter tuning**
+Setelah tuning, berikut hasil evaluasi model yang diperoleh:
 
-| Model                          | Accuracy | Precision | Recall  | F1-Score |
-|-------------------------------|----------|-----------|---------|----------|
-| Logistic Regression (LR)      | 0.714101 | 0.584071  | 0.712230| 0.641815 |
-| Support Vector Machine (SVM)  | 0.720569 | 0.589595  | 0.733813| 0.653846 |
-| Logistic Regression (Tuned)   | 0.721863 | 0.591304  | 0.733813| 0.654896 |
-| Support Vector Machine (Tuned)| 0.719276 | 0.577608  | 0.816547| 0.676602 |
+| Model                          | Accuracy | Precision | Recall   | F1-Score |
+| ------------------------------ | -------- | --------- | -------- | -------- |
+| Logistic Regression (Tuned)    | 0.721863 | 0.591304  | 0.733813 | 0.654896 |
+| Support Vector Machine (Tuned) | 0.719276 | 0.577608  | 0.816547 | 0.676602 |
 
-Model **Support Vector Machine** (Tuned) dipilih sebagai solusi utama karena memberikan performa paling seimbang dan andal untuk mendeteksi perokok, terutama ditunjukkan melalui nilai F1-Score dan Recall yang superior dibandingkan model lainnya. Model ini lebih mampu menangani trade-off antara jenis kesalahan prediksi, menjadikannya pilihan ideal untuk masalah klasifikasi biner seperti ini.
+### Model Terbaik
+
+Model **Support Vector Machine (Tuned)** dipilih sebagai solusi utama karena memberikan **F1-Score dan Recall tertinggi**, menunjukkan kemampuannya dalam mendeteksi perokok secara andal. Nilai recall yang tinggi penting dalam konteks ini, karena berarti model mampu mengenali sebagian besar individu yang benar-benar merupakan perokok, yang krusial dalam skenario pencegahan atau intervensi kesehatan.
 
 ## Evaluation
 Pada tahap evaluasi ini, digunakan beberapa metrik untuk mengukur kinerja model klasifikasi dalam membedakan antara perokok dan bukan perokok. Metrik yang digunakan meliputi:

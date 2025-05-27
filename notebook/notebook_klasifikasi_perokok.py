@@ -48,6 +48,8 @@ df = df.sample(n=5000, random_state=42)
 """# Exploratory Data Analysis (EDA)
 
 ## Struktur Data
+
+Bagian ini merupakan melihat struktur dan isi dari dataset
 """
 
 df.head()
@@ -64,9 +66,12 @@ print(f"Jumlah baris: {row}")
 
 df.info()
 
-df.describe()
+"""Insight: Berdasarkan hasil yang telah didapat, diketahui bahwa jumlah kolom dan baris setelah penghapusan kolom yang tidak perlu adalah sebanyak 10 kolom dan 500 baris. Kemudian pada `df.info()` diketahui bahwa tidak ada baris yang berisi null dan data type yang beragam.
 
-"""## Cek NULL dan DUPLICATED"""
+## Cek NULL dan DUPLICATED
+
+Melakukan pengecekan nilai NULL dan baris DUPLICATED
+"""
 
 df.isnull().sum()
 df.dropna(inplace=True)
@@ -74,7 +79,12 @@ df.dropna(inplace=True)
 df.duplicated().sum()
 df.drop_duplicates(inplace=True)
 
-"""## Menangani Outlier"""
+"""Insight: Dari hasil pengecekan NULL dan DUPLICATED, tidak ada baris yang mendapatkannya. Hal ini berarti bagus karena nilai NULL dan baris DUPLICATED dapat mengacaukan modeling data.
+
+## Menangani Outlier
+
+Melihat dan menangani outlier pada kolom bertipe data number
+"""
 
 numeric_columns = df.select_dtypes(include=['number']).columns
 
@@ -143,7 +153,12 @@ for i, col in enumerate(numeric_columns, 1):
 plt.tight_layout()
 plt.show()
 
-"""## Visualisasi Data Numerik & Kategorikal"""
+"""Insight: Setelah diketahui terdapat outlier, kemudian dihilangkan. Meski masih ada beberapa outlier, tapi tidak terlalu berpengaruh dibandingkan sebelumnya.
+
+## Visualisasi Data Numerik & Kategorikal
+
+Menvisualisasikan data numerik dan data kategorikal
+"""
 
 numerical_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
 n = len(numerical_cols)
@@ -186,21 +201,13 @@ sns.heatmap(df.corr(numeric_only=True), annot=True, cmap='coolwarm', fmt='.2f')
 plt.title("Heatmap Korelasi Antar Variabel")
 plt.show()
 
-"""fasting blood sugar, Cholesterol, triglyceride, Urine protein	Merokok tidak selalu berdampak langsung terhadap parameter-parameter ini, dan bisa memiliki noise tinggi (dipengaruhi pola makan, genetik, dsb)
-
-Systolic & Relaxation (tekanan darah)
-
-GTP (γ-GTP), ALT, AST (indikator fungsi hati → sangat terpengaruh oleh merokok dan alkohol)
-
-Hemoglobin
-
-Serum Creatinine
-
-HDL / LDL (jika tetap dipertahankan → indikator jantung)
-
-Tartar dan Dental Caries (berhubungan dengan kebersihan mulut dan dampak nikotin)
+"""Insight:
+1. Pada visualisasi data numerik, diperlihatkan jumlah masing-masing kolom dan outliernya. Pada data kategorikal, juga diperlihatkan jumlah data dari masing-masing kolom.
+2. Pada korelasi antar variabel, terlihat bahwa tekanan darah sistolik dan diastolik (relaxation) memiliki korelasi positif yang kuat (0.74), menandakan bahwa keduanya saling berhubungan erat secara fisiologis. Variabel hemoglobin menunjukkan korelasi cukup tinggi dengan smoking (0.39), begitu pula GTP (0.31) dan serum creatinine (0.28), yang mengindikasikan bahwa faktor-faktor terkait fungsi darah dan organ tubuh mungkin berhubungan dengan kebiasaan merokok. Berat badan juga berkorelasi sedang dengan hemoglobin (0.52), serum creatinine (0.39), dan GTP (0.39), menunjukkan adanya hubungan antara massa tubuh dan kondisi kesehatan organ. Korelasi antar fitur lainnya terhadap smoking tergolong lemah, sehingga pemodelan prediktif berbasis linear kemungkinan tidak cukup, dan pendekatan algoritma non-linear seperti Random Forest atau XGBoost lebih direkomendasikan. Selain itu, tidak ditemukan indikasi multikolinearitas yang ekstrem antar fitur, sehingga seluruh variabel masih dapat digunakan secara bersamaan dalam proses modeling.
 
 ## Encoding Fitur Kategorikal
+
+Melakukan encoding fitur kategorikal
 """
 
 label_encoder = LabelEncoder()
@@ -212,7 +219,12 @@ for column in categorical_columns:
 
 df.head()
 
-"""## Standarisasi Fitur Numerik"""
+"""Insight: Dari hasil encoding, pada klom `gender` dan `tartar` telah diubah kedalam numerik. Hal ini digunakan untuk modelin, karena machine learning lebih baik mendeteksi menggunakan angka.
+
+## Standarisasi Fitur Numerik
+
+Melakukan standarisai fitur numerik
+"""
 
 # Buat instance StandardScaler
 scaler = StandardScaler()
@@ -228,16 +240,22 @@ sns.heatmap(df.corr(numeric_only=True), annot=True, cmap='coolwarm', fmt='.2f')
 plt.title("Heatmap Korelasi Antar Variabel")
 plt.show()
 
-"""# Data Splitting"""
+"""Insight: Standarisasi digunakan untuk menyamakan skala fitur (variabel) dalam dataset agar memiliki kontribusi yang setara dalam analisis atau pemodelan. Kemudian untuk melihat korelasinya, di mana akan mendeteksi kolom `gender` dan  `tartar`, bahwa kolom `gender` sangat berkorelasi dengan kolom `age`, `weight`, dan `hemoglobin`.
 
-# Split data menjadi set pelatihan dan set uji
+# Data Splitting
+
+Split data menjadi set pelatihan dan set uji
+"""
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Tampilkan bentuk set pelatihan dan set uji untuk memastikan split
 print(f"Training set shape: X_train={X_train.shape}, y_train={y_train.shape}")
 print(f"Test set shape: X_test={X_test.shape}, y_test={y_test.shape}")
 
-"""# Pelatihan Model"""
+"""Insight: Dataset telah dibagi dengan proporsi 80:20 menggunakan train_test_split, menghasilkan 3088 data latih dan 773 data uji, masing-masing dengan 9 fitur. Pembagian ini memastikan model dapat belajar dan diuji secara objektif, sementara random_state=42 digunakan agar hasil pembagian konsisten.
+
+# Pelatihan Model
+"""
 
 lr = LogisticRegression().fit(X_train, y_train)
 svm = SVC().fit(X_train, y_train)
@@ -339,10 +357,15 @@ for model_name, metrics in results.items():
     })
 
 summary_df = pd.DataFrame(rows)
-print("\n=== Ringkasan Performa Model ===")
+print("=== Ringkasan Performa Model ===")
 print(summary_df)
 
-"""# Evaluasi"""
+"""Insight: Berdasarkan hasil evaluasi, model Support Vector Machine (SVM) dan Logistic Regression (LR) menunjukkan performa yang cukup baik sebelum dan sesudah tuning. Setelah dilakukan hyperparameter tuning menggunakan GridSearchCV, kedua model mengalami peningkatan kinerja. Logistic Regression yang dituning memperoleh sedikit peningkatan pada akurasi (dari 0.714 ke 0.721) dan F1-Score (dari 0.641 ke 0.654). Sementara itu, SVM yang dituning mencatatkan recall tertinggi (0.816), menunjukkan kemampuannya yang sangat baik dalam mendeteksi kelas positif, meskipun precision-nya sedikit menurun. Secara keseluruhan, SVM yang telah dituning memberikan performa terbaik dari segi F1-Score (0.676), menjadikannya kandidat model yang paling optimal untuk digunakan pada dataset ini.
+
+# Evaluasi
+
+Menampilkan evaluasi terakhir dari hasil yang didapatkan pada model di atas
+"""
 
 # Daftar model terbaik untuk evaluasi akhir
 final_models = {
@@ -372,3 +395,4 @@ def evaluate_and_report(model, model_name, X_test, y_test):
 for name, model in final_models.items():
     evaluate_and_report(model, name, X_test, y_test)
 
+"""Insight: Berdasarkan hasil classification report untuk model terbaik yang telah dituning, baik Logistic Regression maupun Support Vector Machine (SVM) mencapai akurasi keseluruhan sebesar 72%. Namun, perbedaan muncul dalam keseimbangan antara precision dan recall. Logistic Regression (Tuned) memiliki precision lebih tinggi untuk kelas negatif (0.83) namun lebih rendah untuk kelas positif (0.59), sedangkan SVM (Tuned) menunjukkan recall yang sangat tinggi pada kelas positif (0.82), meskipun precision-nya lebih rendah (0.58). Artinya, SVM lebih baik dalam mendeteksi kasus positif, namun dengan konsekuensi prediksi positif palsu yang lebih banyak. Dalam konteks di mana deteksi kelas positif lebih penting, seperti deteksi penyakit atau risiko, SVM (Tuned) bisa menjadi pilihan yang lebih unggul karena recall-nya yang tinggi."""
